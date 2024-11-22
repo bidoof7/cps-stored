@@ -1,49 +1,48 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
+"use client";
+
+import axios, { AxiosError } from "axios";
+import { useRouter } from "next/navigation";
+
 const Login = () => {
-  const form = useForm({
-    defaultValues: {
-      username: "",
-    },
-  });
-  function onSubmit() {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log("do sth");
-  }
+  const { push } = useRouter();
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const payload = {
+      username: event.currentTarget.username.value,
+      password: event.currentTarget.password.value,
+    };
+
+    try {
+      const { data } = await axios.post("/api/auth/login", payload);
+      alert(JSON.stringify(data));
+
+      // redirect -> /dashboard
+      push("/dashboard");
+    } catch (err) {
+      const error = err as AxiosError;
+
+      alert(error);
+    }
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="shadcn" {...field} />
-              </FormControl>
-              <FormDescription>
-                This is your public display name.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Submit</Button>
+    <main>
+      <h1>NEXTJS AUTH</h1>
+
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="username">Username</label>
+          <input type="text" id="username" name="username" />
+        </div>
+        <div>
+          <label htmlFor="password">Password</label>
+          <input type="password" id="password" name="password" />
+        </div>
+        <button type="submit">Submit</button>
       </form>
-    </Form>
+    </main>
   );
 };
 

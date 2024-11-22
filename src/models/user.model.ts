@@ -12,12 +12,12 @@ export const createUserModel = (
   data: Partial<UserModel>
 ): UserModel => {
   return {
-    username: data.username || "",
-    password: data.password || "",
-    email: data.email || "",
-    first_name: data.first_name || "",
-    last_name: data.last_name || "",
-    photo: data.photo || "",
-    role: data.role || "",
+    username: data.username!,
+    password: data.password!,
+    email: data.email!,
+    first_name: data.first_name!,
+    last_name: data.last_name!,
+    photo: data.photo!,
+    role: data.role!,
   };
 };
