@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/app/middleware/auth";
-// import { createUserModel } from "@/models/user.model";
-// import sql, { getPool } from "@/lib/db";
+import { createUserModel } from "@/models/user.model";
+import sql, { getPool } from "@/lib/db";
 import { serialize } from "cookie";
 import { COOKIE_NAME } from "@/constants";
-// import { getPool } from "@/lib/db";
-// import { createUserInfoModel, UserInfoModel } from "@/models/userinfo.model";
+import * as argon2 from "argon2";
 
 const secret = process.env.JWT_SECRET_KEY;
 
 if (!secret) {
-  throw new Error("JWT_SECRET không được cấu hình trong môi trường.");
+  throw new Error("Can't find secret key in environment.");
 }
 
 const MAX_AGE = 60 * 60 * 24 * 30; // days
@@ -20,83 +19,79 @@ export const POST = async (request: Request) => {
   const body = await request.json();
   const { username, password } = body;
 
-  if (username !== "admin" || password !== "admin") {
-    return (
-      NextResponse.json({
-        message: "Unauthorized",
-      }),
-      { status: 401 }
+  try {
+    const pool = await getPool();
+    const transaction = new sql.Transaction(pool);
+
+    const data = {
+      username,
+    };
+
+    const userModel = createUserModel(data);
+    await transaction.begin();
+
+    const result = await transaction
+      .request()
+      .input("username", sql.VarChar, userModel.username)
+      .execute("User_GetByUsername");
+
+    if (result.recordset.length === 0) {
+      return NextResponse.json(
+        { message: "Invalid credentials user" },
+        { status: 401 }
+      );
+    }
+
+    const user = result.recordset[0];
+    
+    const passwordValid = await argon2.verify(user.password, password);
+    if (!passwordValid) {
+      return NextResponse.json(
+        { message: "Invalid password, try again" },
+        { status: 401 }
+      );
+    }
+    const userInfo = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+    };
+
+    // Xác thực user
+    const payload = { user: user };
+    const token = jwt.sign(
+      payload,
+      secret, // Secret key
+      { expiresIn: "5h" } // Hạn token
     );
+
+    const serialized = serialize(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: MAX_AGE,
+      path: "/",
+    });
+
+    await transaction.commit();
+
+    const res = {
+      message: "Authenticated",
+      user: userInfo,
+    };
+    return new Response(JSON.stringify(res), {
+      status: 200,
+      headers: {
+        "Set-Cookie": serialized,
+      },
+    });
+  } catch (err: unknown) {
+    return new NextResponse(JSON.stringify({ message: "Error" + err }), {
+      status: 500,
+    });
   }
-
-  // const pool = await getPool();
-  // const transaction = new sql.Transaction(pool);
-
-  // const data = {
-  //   username,
-  //   password,
-  // };
-
-  // const userCheck = createUserModel(data);
-
-  // await transaction.begin();
-
-  // const userLogin = await transaction
-  //   .request()
-  //   .input("username", sql.VarChar, userCheck.username)
-  //   .input("password", sql.VarChar, userCheck.password)
-  //   .query(
-  //     "SELECT [username], [password] FROM [VFFRestaurent].[dbo].[user] WHERE username = @username and password = @password"
-  //   );
-
-  // if (userLogin.recordset.length === 0) {
-  //   return NextResponse.json(
-  //     { message: "Invalid credentials" },
-  //     { status: 401 }
-  //   );
-  // }
-
-  // const user = userLogin.recordset[0];
-
-  // async function saveTokenToDatabase(username: string, token: string) {
-  //   const pool = await getPool();
-  //   await pool
-  //     .request()
-  //     .input("username", sql.VarChar, username)
-  //     .input("token", sql.VarChar, token)
-  //     .query(
-  //       "UPDATE [VFFRestaurent].[dbo].[user] SET token = @token WHERE username = @username" // Hoặc INSERT nếu token lưu ở bảng khác
-  //     );
-  // }
-  // const payload = { user: user };
-  // Xác thực user
-  // if (userLogin) {
-  const token = jwt.sign(
-    {username}, // Payload
-    secret, // Secret key
-    { expiresIn: "5h" } // Hạn token
-  );
-  // await saveTokenToDatabase(username, token);
-
-  const serialized = serialize(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: MAX_AGE,
-    path: "/",
-  });
-
-  const res = {
-    message: "Authenticated",
-  };
-  return new Response(JSON.stringify(res), {
-    status: 200,
-    headers: {
-      "Set-Cookie": serialized,
-    },
-  });
 };
-// }
+
 export async function GET(request: Request) {
   // Kiểm tra JWT token
   const { payload, error } = await verifyJwt(request);

@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { COOKIE_NAME } from "@/constants";
 import { NextResponse } from "next/server";
-import { verify } from "jsonwebtoken";
+import { JwtPayload, verify } from "jsonwebtoken";
+import { getPool } from "@/lib/db";
 
 const secret = process.env.JWT_SECRET_KEY;
 
@@ -9,7 +10,7 @@ if (!secret) {
   throw new Error("JWT_SECRET không được cấu hình trong môi trường.");
 }
 
-export async function GET() {
+export const GET = async () => {
   const cookieStore = cookies();
 
   const token = (await cookieStore).get(COOKIE_NAME);
@@ -17,20 +18,44 @@ export async function GET() {
   if (!token) {
     return NextResponse.json(
       {
-        message: "Unauthorized",
+        authenticated: false,
       },
       { status: 401 }
     );
   }
   const { value } = token;
   try {
-    verify(value, secret!);
+    const decoded = verify(value, secret) as JwtPayload & { id: string };
+    const pool = await getPool();
 
-    const res = {
-      user: "Secret user",
-    };
-    return new Response(JSON.stringify(res), {
-      status: 200,
+    const result = await pool
+      .request()
+      .query(
+        `SELECT id, username, first_name, last_name, email, role FROM [VFFRestaurent].[dbo].[user] WHERE id = ${decoded.user.id}`
+      );
+
+    if (result.recordset.length === 0) {
+      return NextResponse.json(
+        {
+          authenticated: false,
+          message: "User not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    const user = result.recordset[0];
+
+    // Trả về thông tin xác thực và người dùng nếu thành công
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role, // Trả về role của người dùng
+        first_name: user.first_name,
+        last_name: user.last_name,
+      },
     });
   } catch (err) {
     return NextResponse.json(
@@ -40,4 +65,4 @@ export async function GET() {
       { status: 400 }
     );
   }
-}
+};

@@ -1,1 +1,1 @@
-export const COOKIE_NAME = "OutSiteJWT"
+export const COOKIE_NAME = "LOGIN_INFO"

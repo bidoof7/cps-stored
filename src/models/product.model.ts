@@ -12,12 +12,12 @@ export const createProductModel = (
   data: Partial<ProductModel>
 ): ProductModel => {
   return {
-    id: data.id || 0,
-    available: data.available || false,
-    image: data.image || "",
-    name: data.name || "",
-    price: data.price || 0,
+    id: data.id!,
+    available: data.available!,
+    image: data.image!,
+    name: data.name!,
+    price: data.price!,
     createdate: data.createdate || new Date(),
-    categoryid: data.categoryid || "",
+    categoryid: data.categoryid!,
   };
 };

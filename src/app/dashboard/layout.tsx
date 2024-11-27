@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -10,15 +10,15 @@ interface UserResponse {
 }
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-    const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
       const { user, error } = await getUser();
-        console.log(user)
+      console.log(user);
       if (error) {
-        router.push("/");
+        router.push("/login");
         return;
       }
 
@@ -26,8 +26,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     })();
   }, [router]);
 
-  if(!isSuccess) {
-    return <div>Loading....</div>
+  if (!isSuccess) {
+    return <div>Loading....</div>;
   }
 
   return (
