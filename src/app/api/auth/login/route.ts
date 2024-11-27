@@ -33,7 +33,7 @@ export const POST = async (request: Request) => {
     const result = await transaction
       .request()
       .input("username", sql.VarChar, userModel.username)
-      .execute("User_GetByUsername");
+      .execute("User_Login");
 
     if (result.recordset.length === 0) {
       return NextResponse.json(
@@ -43,7 +43,7 @@ export const POST = async (request: Request) => {
     }
 
     const user = result.recordset[0];
-    
+
     const passwordValid = await argon2.verify(user.password, password);
     if (!passwordValid) {
       return NextResponse.json(
@@ -79,12 +79,21 @@ export const POST = async (request: Request) => {
       message: "Authenticated",
       user: userInfo,
     };
-    return new Response(JSON.stringify(res), {
-      status: 200,
+
+    return new NextResponse(JSON.stringify({ result: res }), {
+      status: 302, // Status code cho redirect
       headers: {
-        "Set-Cookie": serialized,
+        Location: "/", // Redirect đến trang chủ
+        "Set-Cookie": serialized, // Gắn cookie vào header response
       },
     });
+
+    // return new Response(JSON.stringify(res), {
+    //   status: 200,
+    //   headers: {
+    //     "Set-Cookie": serialized,
+    //   },
+    // });
   } catch (err: unknown) {
     return new NextResponse(JSON.stringify({ message: "Error" + err }), {
       status: 500,

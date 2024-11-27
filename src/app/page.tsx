@@ -1,11 +1,14 @@
-import { Button } from "@/components/ui/button";
+import CarouselBanner from "@/components/ui/carousel";
+
+import { NavigationMenuDemo } from "@/components/ui/menu";
 export default function Home() {
   return (
-    <div className="section1">
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-        Taxing Laughter: The Joke Tax Chronicles
+    <div className="section1 flex flex-col justify-center items-center">
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mt-5">
+        Clothes, Pants, Suits and more
       </h1>
-      <Button>Test button</Button>
+      <NavigationMenuDemo />
+      <CarouselBanner />
     </div>
   );
 }

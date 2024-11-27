@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { COOKIE_NAME } from "@/constants";
 import { NextResponse } from "next/server";
 import { JwtPayload, verify } from "jsonwebtoken";
-import { getPool } from "@/lib/db";
+import sql, { getPool } from "@/lib/db";
 
 const secret = process.env.JWT_SECRET_KEY;
 
@@ -30,9 +30,8 @@ export const GET = async () => {
 
     const result = await pool
       .request()
-      .query(
-        `SELECT id, username, first_name, last_name, email, role FROM [VFFRestaurent].[dbo].[user] WHERE id = ${decoded.user.id}`
-      );
+      .input("id", sql.Int, `${decoded.user.id}`)
+      .execute("User_GetById");
 
     if (result.recordset.length === 0) {
       return NextResponse.json(
@@ -55,6 +54,7 @@ export const GET = async () => {
         role: user.role, // Trả về role của người dùng
         first_name: user.first_name,
         last_name: user.last_name,
+        photo: user.photo,
       },
     });
   } catch (err) {

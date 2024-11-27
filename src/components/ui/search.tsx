@@ -50,9 +50,11 @@ const Search = () => {
             ) : (
               <CommandGroup heading="Products">
                 {result.map((p) => (
-                  <CommandItem key={p.id}>
+                  <CommandItem key={p.id} onClick={() => alert("adasda")}>
                     <span>{p.name}</span> {/* Hiển thị tên sản phẩm */}
-                    <CommandShortcut><Price price={p.price}/>$</CommandShortcut>
+                    <CommandShortcut>
+                      <Price price={p.price} />$
+                    </CommandShortcut>
                   </CommandItem>
                 ))}
               </CommandGroup>

@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@/constants";
 import { serialize } from "cookie";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export const POST = async () => {
   const cookieStore = cookies();
@@ -17,11 +18,12 @@ export const POST = async () => {
 
   if (token) {
     const res = {
-      message: "Lgout successfully",
+      message: "Logout successfully",
     };
-    return new Response(JSON.stringify(res), {
+    return new NextResponse(JSON.stringify(res), {
       status: 200,
       headers: {
+        Location: "/",
         "Set-Cookie": serialized,
       },
     });

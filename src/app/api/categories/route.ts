@@ -9,7 +9,7 @@ export const GET = async () => {
     const categories: CategoryModel[] =
       result.recordset.map(createCategoryModel);
     return new NextResponse(
-      JSON.stringify({ message: "Success", category: categories }),
+      JSON.stringify({ message: "Success", categories: categories }),
       { status: 200 }
     );
   } catch (err: unknown) {

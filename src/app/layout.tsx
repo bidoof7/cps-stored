@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Header from "@/components/ui/header";
 import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -40,6 +41,7 @@ export default function RootLayout({
           <AuthProvider>
             <Header />
             <main className="container mx-auto mt-[56px]">{children}</main>
+            <Toaster richColors={true} expand={false} />
           </AuthProvider>
         </ThemeProvider>
       </body>

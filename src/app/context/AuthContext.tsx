@@ -2,11 +2,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-
 interface UserInfo {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
+  photo: string | null;
 }
 
 interface AuthContextType {
@@ -15,6 +15,7 @@ interface AuthContextType {
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   setRole: (role: string) => void;
   info: UserInfo | null;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,8 +24,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [role, setRole] = useState<string | null>(null);
   const [info, setInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   // Lấy trạng thái đăng nhập từ cookie hoặc API
   React.useEffect(() => {
+    console.log("Re-render")
     const checkAuth = async () => {
       try {
         const response = await fetch("/api/auth/me");
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             username: data.user.username,
             first_name: data.user.first_name,
             last_name: data.user.last_name,
+            photo: data.user.photo,
           });
         } else {
           setIsAuthenticated(false);
@@ -47,14 +51,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(false);
         setRole(null);
         setInfo(null);
+      } finally {
+        setLoading(false); // Hoàn tất việc tải dữ liệu
       }
     };
     checkAuth();
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider
-      value={{ info, isAuthenticated, role, setIsAuthenticated, setRole }}
+      value={{
+        info,
+        isAuthenticated,
+        loading,
+        role,
+        setIsAuthenticated,
+        setRole,
+      }}
     >
       {children}
     </AuthContext.Provider>

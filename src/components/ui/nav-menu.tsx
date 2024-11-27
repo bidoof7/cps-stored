@@ -20,30 +20,36 @@ import { LogInIcon, LogOutIcon, Moon, ShoppingCart, Sun } from "lucide-react";
 import { Avatar, AvatarImage } from "./avatar";
 import { useAuth } from "@/app/context/AuthContext";
 import { Separator } from "./separator";
+import { toast } from "sonner";
 
 const NavMenu = () => {
   const { setTheme } = useTheme();
-  const { push } = useRouter();
+  const router = useRouter();
   const { isAuthenticated, setIsAuthenticated, info } = useAuth();
-
   const handleRedirectCartPage = () => {
-    push("/cart");
+    router.push("/cart");
   };
 
   const handleRedirectLoginPage = () => {
-    push("/login");
+    router.push("/login");
   };
 
   const handleRedirectUserPage = () => {
-    push("/user");
+    router.push("/user");
   };
 
   const handleLogout = async () => {
     try {
+      const fetchLogout = axios.post("/api/auth/logout");
+      toast.promise(fetchLogout, {
+        success: "Logout successfully.",
+      });
       const response = await axios.post("/api/auth/logout");
       if (response.status === 200) {
         setIsAuthenticated(false);
-        push("/");
+
+        // Hoặc bạn có thể dùng router.replace("/") để tránh tạo một bản ghi lịch sử mới:
+        router.replace("/");
       }
     } catch (error) {
       setIsAuthenticated(false);
@@ -71,7 +77,11 @@ const NavMenu = () => {
             size="icon"
           >
             <Avatar>
-              <AvatarImage src="https://github.com/shadcn.png" />
+              {info?.photo ? (
+                <AvatarImage src={`${info?.photo}`} />
+              ) : (
+                <AvatarImage src="https://res.cloudinary.com/dmr2omjs2/image/upload/v1732698608/none-user_ft2onz.webp" />
+              )}
             </Avatar>
           </Button>
         </DropdownMenuTrigger>

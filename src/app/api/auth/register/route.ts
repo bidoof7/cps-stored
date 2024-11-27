@@ -5,7 +5,8 @@ import * as argon2 from "argon2";
 
 export const POST = async (request: Request) => {
   const body = await request.json();
-  const { username, password, first_name, last_name, email, photo, role } = body;
+  const { username, password, first_name, last_name, email, photo, role } =
+    body;
 
   try {
     const pool = await getPool();
@@ -23,13 +24,7 @@ export const POST = async (request: Request) => {
     };
 
     const newUser = createUserModel(data);
-    console.log("Beginning transaction...");
     await transaction.begin();
-    console.log("Transaction started");
-
-    // Sau khi thực thi truy vấn
-    console.log("Executing SQL...");
-
     const result = await transaction
       .request()
       .input("username", sql.VarChar, newUser.username)
@@ -41,15 +36,18 @@ export const POST = async (request: Request) => {
       .input("role", sql.VarChar, newUser.role)
       .execute("User_Register");
 
-    console.log("SQL executed, committing transaction...");
     await transaction.commit();
-    console.log("Transaction committed");
     return new NextResponse(
       JSON.stringify({
         message: "User created successfully",
         newUser: result.recordset,
       }),
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          Location: "/",
+        },
+      }
     );
   } catch (err: unknown) {
     return new NextResponse(JSON.stringify({ message: "Error" + err }), {

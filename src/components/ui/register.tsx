@@ -1,5 +1,4 @@
 import axios, { AxiosError } from "axios";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -22,32 +21,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const formSchema = z
-  .object({
-    username: z.string().min(2, {
-      message: "Username must be at least 2 characters.",
-    }),
-    password: z.string().min(8, {
-      message: "Password must be at least 8 characters",
-    }),
-    confirm_password: z.string().min(8, {
-      message: "Password must be at least 8 characters",
-    }),
-    email: z.string().email().min(1, "Required"),
-    first_name: z.string(),
-    last_name: z.string(),
-  })
-  .refine((data) => data.password === data.confirm_password, {
-    message: "Passwords don't match",
-    path: ["confirm_password"], // Chỉ chỉ lỗi cho trường confirm_password
-  });
+import { SignupFormSchema } from "@/lib/definitions";
+import { toast } from "sonner";
 
 const FormRegister = () => {
-  const { push } = useRouter();
   // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof SignupFormSchema>>({
+    resolver: zodResolver(SignupFormSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -59,7 +39,7 @@ const FormRegister = () => {
   });
 
   // 2. Define a submit handler.
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof SignupFormSchema>) => {
     const payload = {
       username: values.username,
       password: values.password,
@@ -69,10 +49,15 @@ const FormRegister = () => {
     };
 
     try {
-      await axios.post("/api/auth/register", payload);
+      const fetchRegister = axios.post("/api/auth/register", payload);
 
-      // redirect -> /dashboard
-      push("/login");
+      toast.promise(fetchRegister, {
+        loading: "Verifying...",
+        success: "Register successfully, login and shopping now.",
+        error: "Invalid credentials, please check again.",
+      });
+
+      await fetchRegister;
     } catch (err) {
       const error = err as AxiosError;
       alert(error);
@@ -194,13 +179,19 @@ const FormRegister = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit">
-              Submit
-            </Button>
+            <SubmitButton />
           </CardFooter>
         </form>
       </Form>
     </Card>
+  );
+};
+
+const SubmitButton = () => {
+  return (
+    <Button className="w-full" type="submit">
+      Register
+    </Button>
   );
 };
 
