@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { COOKIE_NAME } from "./constants";
-import { parse } from "cookie";
 const secret = process.env.JWT_SECRET_KEY;
 
 const protectedRoutes = ["/dashboard"];
@@ -13,7 +12,7 @@ const publicRoutes = [
   "/api/auth/me",
   "/api/auth/logout",
   "/api/auth/login",
-  "/api/categories"
+  "/api/categories",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -27,12 +26,6 @@ export async function middleware(request: NextRequest) {
   }
   try {
     const token = request.cookies.get(COOKIE_NAME)?.value;
-    const cookies = parse(request.headers.get("cookie") || "");
-    const ntoken = cookies[COOKIE_NAME];
-
-    if (!ntoken) {
-      return NextResponse.next(); // Nếu không có token, tiếp tục yêu cầu (không chuyển hướng)
-    }
     if (!token) {
       // Nếu không có token và đang truy cập route bảo vệ, chuyển hướng đến login
       if (isProtectedRoute) {
@@ -43,9 +36,9 @@ export async function middleware(request: NextRequest) {
 
     // Xác minh token
     const verifyUser = jwt.verify(token, secret!) as JwtPayload;
-
+    console.log(verifyUser);
     // Kiểm tra thông tin người dùng từ token
-    if (isProtectedRoute && !verifyUser.user?.userId) {
+    if (isProtectedRoute && !verifyUser.user?.id) {
       return NextResponse.redirect(new URL("/login", request.nextUrl));
     }
 

@@ -1,9 +1,12 @@
+"use client";
+
 import axios, { AxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -22,9 +25,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SignupFormSchema } from "@/lib/definitions";
-import { toast } from "sonner";
+
+import SubmitButton from "./submitButton";
 
 const FormRegister = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupFormSchema>>({
     resolver: zodResolver(SignupFormSchema),
@@ -47,7 +52,7 @@ const FormRegister = () => {
       last_name: values.last_name,
       email: values.email,
     };
-
+    setIsLoading(true);
     try {
       const fetchRegister = axios.post("/api/auth/register", payload);
 
@@ -56,8 +61,8 @@ const FormRegister = () => {
         success: "Register successfully, login and shopping now.",
         error: "Invalid credentials, please check again.",
       });
-
       await fetchRegister;
+      setIsLoading(false);
     } catch (err) {
       const error = err as AxiosError;
       alert(error);
@@ -179,19 +184,11 @@ const FormRegister = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <SubmitButton />
+            <SubmitButton loading={isLoading} />
           </CardFooter>
         </form>
       </Form>
     </Card>
-  );
-};
-
-const SubmitButton = () => {
-  return (
-    <Button className="w-full" type="submit">
-      Register
-    </Button>
   );
 };
 

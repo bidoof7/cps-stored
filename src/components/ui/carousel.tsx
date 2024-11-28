@@ -12,7 +12,7 @@ import {
 
 const CarouselBanner = () => {
   return (
-    <Carousel className="mt-7">
+    <Carousel className="mt-5">
       <CarouselNext />
       <CarouselPrevious />
       <div className="relative ">

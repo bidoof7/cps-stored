@@ -4,7 +4,8 @@ import axios, { AxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import {
   Form,
@@ -25,9 +26,10 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/app/context/AuthContext";
 import { LoginFormSchema } from "@/lib/definitions";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import SubmitButton from "./submitButton";
 const FormLogin = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { setIsAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -46,7 +48,7 @@ const FormLogin = () => {
       username: values.username,
       password: values.password,
     };
-
+    setIsLoading(true);
     try {
       const fetchLogin = axios.post("/api/auth/login", payload);
       toast.promise(fetchLogin, {
@@ -54,8 +56,8 @@ const FormLogin = () => {
         success: "Login successful!",
         error: "Invalid credentials, please check again.",
       });
-
       const response = await fetchLogin;
+      setIsLoading(false);
       if (response.status === 200) {
         setIsAuthenticated(true);
         // Hoặc bạn có thể dùng router.replace("/") để tránh tạo một bản ghi lịch sử mới:
@@ -64,6 +66,8 @@ const FormLogin = () => {
     } catch (err) {
       const error = err as AxiosError;
       console.log("Login error: ", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,16 +115,12 @@ const FormLogin = () => {
             />
           </CardContent>
           <CardFooter className="justify-end">
-            <SubmitButton />
+            <SubmitButton loading={isLoading} />
           </CardFooter>
         </form>
       </Form>
     </Card>
   );
-};
-
-const SubmitButton = () => {
-  return <Button className="w-full">Login</Button>;
 };
 
 export default FormLogin;

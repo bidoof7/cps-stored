@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   // Lấy trạng thái đăng nhập từ cookie hoặc API
   React.useEffect(() => {
-    console.log("Re-render")
     const checkAuth = async () => {
       try {
         const response = await fetch("/api/auth/me");
