@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
+import React from "react";
+import axios from "axios";
 // import { Input } from "./input";
 // import { Button } from "./button";
 // import { SearchIcon } from "lucide-react";
@@ -11,16 +12,15 @@ import {
   CommandItem,
   CommandList,
   CommandShortcut,
-} from "./command";
-import axios from "axios";
-import Price from "./price";
+} from "../ui/command";
+import Price from "../ui/extension/price";
 
 const Search = () => {
-  const [isFocused, setIsFocused] = useState<boolean>(false);
-  const [result, setResult] = useState<any[]>([]);
+  const [isFocused, setIsFocused] = React.useState<boolean>(false);
+  const [result, setResult] = React.useState<any[]>([]);
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setIsFocused(false);
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchResult = async () => {
       try {
         const { data } = await axios.get("/api/products");

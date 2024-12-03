@@ -3,16 +3,20 @@ import sql, { getPool } from "@/lib/db";
 import { CategoryModel, createCategoryModel } from "@/models/category.model";
 
 export const GET = async () => {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
   try {
-    const pool = await getPool();
+    await transaction.begin();
     const result = await pool.request().execute("Product_Category_GetAll");
     const categories: CategoryModel[] =
       result.recordset.map(createCategoryModel);
+    await transaction.commit();
     return new NextResponse(
       JSON.stringify({ message: "Success", categories: categories }),
       { status: 200 }
     );
   } catch (err: unknown) {
+    transaction.rollback();
     return new NextResponse(JSON.stringify({ message: "Error" + err }), {
       status: 500,
     });

@@ -1,8 +1,10 @@
 // context/AuthContext.tsx
 "use client";
 
+import { GetServerSideProps } from "next";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 interface UserInfo {
+  id: number | null;
   username: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -35,6 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAuthenticated(true);
           setRole(data.user.role); // Lưu role từ server
           setInfo({
+            id: data.user.id,
             username: data.user.username,
             first_name: data.user.first_name,
             last_name: data.user.last_name,
@@ -56,6 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     checkAuth();
   }, [isAuthenticated]);
+
+  if (loading) {
+    return <div>Loading...</div>; // Show loading indicator while fetching data
+  }
 
   return (
     <AuthContext.Provider
@@ -80,4 +87,15 @@ export const useAuth = (): AuthContextType => {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+};
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const res = await fetch("https://api.example.com/products");
+  const data = await res.json();
+
+  return {
+    props: {
+      products: data.products,
+    },
+  };
 };

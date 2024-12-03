@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { verifyJwt } from "@/app/middleware/auth";
 import { createUserModel } from "@/models/user.model";
 import sql, { getPool } from "@/lib/db";
 import { serialize } from "cookie";
 import { COOKIE_NAME } from "@/constants";
 import * as argon2 from "argon2";
+import { SignJWT } from "jose";
 
 const secret = process.env.JWT_SECRET_KEY;
-
+const decoded = new TextEncoder().encode(secret);
 if (!secret) {
   throw new Error("Can't find secret key in environment.");
 }
@@ -19,16 +18,16 @@ export const POST = async (request: Request) => {
   const body = await request.json();
   const { username, password } = body;
 
-  try {
-    const pool = await getPool();
-    const transaction = new sql.Transaction(pool);
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
 
+  try {
+    await transaction.begin();
     const data = {
       username,
     };
 
     const userModel = createUserModel(data);
-    await transaction.begin();
 
     const result = await transaction
       .request()
@@ -42,30 +41,34 @@ export const POST = async (request: Request) => {
       );
     }
 
-    const user = result.recordset[0];
+    const userResult = result.recordset[0];
 
-    const passwordValid = await argon2.verify(user.password, password);
+    const passwordValid = await argon2.verify(userResult.password, password);
     if (!passwordValid) {
       return NextResponse.json(
         { message: "Invalid password, try again" },
         { status: 401 }
       );
     }
-    const userInfo = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
-    };
 
     // Xác thực user
-    const payload = { user: user };
-    const token = jwt.sign(
-      payload,
-      secret, // Secret key
-      { expiresIn: "5h" } // Hạn token
-    );
+    const payload = {
+      user: {
+        id: userResult.id,
+        username: userResult.username,
+        first_name: userResult.first_name,
+        last_name: userResult.last_name,
+        photo: userResult.photo,
+        role: userResult.role,
+      },
+    };
 
-    const serialized = serialize(COOKIE_NAME, token, {
+    const generateToken = await new SignJWT(payload)
+      .setExpirationTime("5h")
+      .setProtectedHeader({ alg: "HS256" })
+      .sign(decoded);
+
+    const serialized = serialize(COOKIE_NAME, generateToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -77,8 +80,10 @@ export const POST = async (request: Request) => {
 
     const res = {
       message: "Authenticated",
-      user: userInfo,
+      user: payload.user,
     };
+
+    console.log(res);
 
     return new NextResponse(JSON.stringify({ result: res }), {
       status: 302, // Status code cho redirect
@@ -87,31 +92,16 @@ export const POST = async (request: Request) => {
         "Set-Cookie": serialized, // Gắn cookie vào header response
       },
     });
-
-    // return new Response(JSON.stringify(res), {
-    //   status: 200,
-    //   headers: {
-    //     "Set-Cookie": serialized,
-    //   },
-    // });
   } catch (err: unknown) {
-    return new NextResponse(JSON.stringify({ message: "Error" + err }), {
-      status: 500,
-    });
+    transaction.rollback();
+    console.error("Error during login:", err); // Log chi tiết lỗi phía server
+    return new NextResponse(
+      JSON.stringify({
+        message: "Something went wrong. Please try again later.",
+      }),
+      {
+        status: 500,
+      }
+    );
   }
 };
-
-export async function GET(request: Request) {
-  // Kiểm tra JWT token
-  const { payload, error } = await verifyJwt(request);
-
-  if (error) {
-    return NextResponse.json({ message: error }, { status: 401 });
-  }
-
-  // Nếu token hợp lệ
-  return NextResponse.json({
-    message: "Access granted",
-    user: payload, // Trả về payload từ token
-  });
-}

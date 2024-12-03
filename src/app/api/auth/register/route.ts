@@ -8,10 +8,11 @@ export const POST = async (request: Request) => {
   const { username, password, first_name, last_name, email, photo, role } =
     body;
 
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
   try {
-    const pool = await getPool();
-    const transaction = new sql.Transaction(pool);
-
+    // 1. Create payload
+    await transaction.begin();
     const hashedPassword = await argon2.hash(password);
     const data = {
       username,
@@ -22,9 +23,7 @@ export const POST = async (request: Request) => {
       photo,
       role,
     };
-
     const newUser = createUserModel(data);
-    await transaction.begin();
     const result = await transaction
       .request()
       .input("username", sql.VarChar, newUser.username)
@@ -35,8 +34,8 @@ export const POST = async (request: Request) => {
       .input("photo", sql.VarChar, newUser.photo)
       .input("role", sql.VarChar, newUser.role)
       .execute("User_Register");
-
     await transaction.commit();
+
     return new NextResponse(
       JSON.stringify({
         message: "User created successfully",
@@ -50,8 +49,13 @@ export const POST = async (request: Request) => {
       }
     );
   } catch (err: unknown) {
-    return new NextResponse(JSON.stringify({ message: "Error" + err }), {
-      status: 500,
-    });
+    transaction.rollback();
+    console.log("Error at register API: ", err);
+    return new NextResponse(
+      JSON.stringify({ message: "Something went wrong" }),
+      {
+        status: 500,
+      }
+    );
   }
 };

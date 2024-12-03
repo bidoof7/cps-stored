@@ -12,6 +12,7 @@ export const PATCH = async (req: Request, context: { params: any }) => {
 
     const pool = await getPool();
     const transaction = new sql.Transaction(pool);
+    await transaction.begin();
 
     const data = {
       id,
@@ -19,8 +20,6 @@ export const PATCH = async (req: Request, context: { params: any }) => {
     };
 
     const newCategory = createCategoryModel(data);
-
-    await transaction.begin();
 
     const existId = await transaction
       .request()

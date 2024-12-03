@@ -1,6 +1,6 @@
-import CarouselBanner from "@/components/ui/carousel";
+import CarouselBanner from "@/components/section/carousel";
 
-import { NavigationMenuDemo } from "@/components/ui/menu";
+import { NavigationMenuDemo } from "@/components/section/menu";
 export default function Home() {
   return (
     <div className="section1 flex flex-col justify-center items-center">

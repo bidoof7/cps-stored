@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
@@ -13,7 +11,6 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import axios from "axios";
 
 interface Category {
   id: number | undefined;
@@ -59,18 +56,10 @@ const components: { title: string; href: string; description: string }[] = [
   },
 ];
 
-export const NavigationMenuDemo = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await axios.get("/api/categories");
-      const categories = data.categories;
-      setCategories(categories);
-    };
-
-    fetchCategories();
-  }, []);
+export const NavigationMenuDemo = async () => {
+  const data = await fetch(`${process.env.LOCAL_API_URL}/categories`);
+  const response = await data.json();
+  const categories: Category[] = response.categories;
 
   return (
     <NavigationMenu className="mt-5">
@@ -78,9 +67,13 @@ export const NavigationMenuDemo = () => {
         <NavigationMenuItem>
           <NavigationMenuTrigger>Categories</NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+            <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {categories.map((c) => (
-                <ListItem key={c.id} title={c.name} href={c.name}>
+                <ListItem
+                  key={c.id}
+                  title={c.name}
+                  href={"/products/" + c.id?.toString() || ""}
+                >
                   {c.description}
                 </ListItem>
               ))}

@@ -1,8 +1,8 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FormLogin from "@/components/ui/login";
-import FormRegister from "@/components/ui/register";
+import FormLogin from "@/components/form/login";
+import FormRegister from "@/components/form/register";
 
 const Login = () => {
   return (

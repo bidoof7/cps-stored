@@ -1,57 +1,78 @@
 // middleware.ts
 import { NextRequest, NextResponse } from "next/server";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { COOKIE_NAME } from "./constants";
-const secret = process.env.JWT_SECRET_KEY;
+import { COOKIE_NAME } from "./constants"; // Đảm bảo rằng constant này được cấu hình đúng
+import { jwtVerify } from "jose";
 
-const protectedRoutes = ["/dashboard"];
-const publicRoutes = [
-  "/login",
-  "/",
-  "/api/products",
-  "/api/auth/me",
-  "/api/auth/logout",
-  "/api/auth/login",
-  "/api/categories",
-];
+const secret = process.env.JWT_SECRET_KEY;
+const decoded = new TextEncoder().encode(secret);
+if (!secret) {
+  throw new Error("Can't find secret key in environment.");
+}
+
+interface UserPayload {
+  user: {
+    id: string;
+    username: string;
+    role: string;
+    first_name: string;
+    last_name: string;
+    photo: string;
+  };
+}
+
+// Định nghĩa các route bảo vệ (như trang admin)
+const protectedRoutes = ["/dashboard"]; // Các route như /dashboard sẽ là protected
+
+// Cấu hình matcher để áp dụng middleware cho tất cả các route ngoài các route protected
+export const config = {
+  matcher: [
+    "/((?!dashboard).*)", // Tất cả các route ngoại trừ /dashboard
+  ],
+};
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // Kiểm tra xem route có phải là protected không
   const isProtectedRoute = protectedRoutes.includes(path);
-  const isPublicRoute = publicRoutes.includes(path);
 
-  if (isPublicRoute) {
+  // Nếu là một route public (ngoài /dashboard), không cần kiểm tra token
+  if (!isProtectedRoute) {
     return NextResponse.next();
   }
-  try {
-    const token = request.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      // Nếu không có token và đang truy cập route bảo vệ, chuyển hướng đến login
-      if (isProtectedRoute) {
-        return NextResponse.redirect(new URL("/login", request.nextUrl));
-      }
-      return NextResponse.next(); // Trường hợp khác không cần token
-    }
 
-    // Xác minh token
-    const verifyUser = jwt.verify(token, secret!) as JwtPayload;
-    console.log(verifyUser);
-    // Kiểm tra thông tin người dùng từ token
-    if (isProtectedRoute && !verifyUser.user?.id) {
+  try {
+    // Lấy token từ cookies
+    const token = request.cookies.get(COOKIE_NAME)?.value;
+
+    if (!token) {
+      // Nếu không có token và người dùng truy cập route protected, chuyển hướng đến trang login
       return NextResponse.redirect(new URL("/login", request.nextUrl));
     }
 
-    // Kiểm tra token, nhưng không truy vấn DB
+    // Xác thực token JWT
+    const { payload } = (await jwtVerify(token, decoded)) as {
+      payload: UserPayload;
+    };
+
+    const userVerify = payload.user;
+
+    // Kiểm tra xem đối tượng user có tồn tại trong payload (token hợp lệ hay không)
+    if (!userVerify) {
+      return NextResponse.redirect(new URL("/login", request.nextUrl));
+    }
+
+    // Kiểm tra quyền truy cập của người dùng (có thể kiểm tra role tại đây)
+    const userRole = userVerify.role; // Giả sử 'role' được lưu trong payload của JWT
+    if (userRole !== "admin") {
+      return NextResponse.redirect(new URL("/login", request.nextUrl)); // Hoặc chuyển hướng đến trang "không có quyền truy cập"
+    }
+
+    // Nếu người dùng hợp lệ và có quyền, tiếp tục đến route được yêu cầu
     return NextResponse.next();
   } catch (error: unknown) {
-    return NextResponse.json(
-      { message: "Invalid token", error },
-      { status: 401 }
-    );
+    console.error("Error during middleware:", error);
+    // Trả về lỗi khi không xác thực được người dùng
+    return NextResponse.json({ message: "Not authorized" }, { status: 401 });
   }
 }
-
-export const config = {
-  matcher: ["/dashboard", "/api/:path*"],
-};

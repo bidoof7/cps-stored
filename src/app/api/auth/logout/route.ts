@@ -15,24 +15,20 @@ export const POST = async () => {
     httpOnly: true, // Không thể truy cập cookie từ JavaScript
     secure: process.env.NODE_ENV === "production", // Chỉ gửi qua HTTPS trong môi trường production
   });
-
+  // 1. If token valid
   if (token) {
-    const res = {
-      message: "Logout successfully",
-    };
-    return new NextResponse(JSON.stringify(res), {
-      status: 200,
-      headers: {
-        Location: "/",
-        "Set-Cookie": serialized,
-      },
-    });
+    return new NextResponse(
+      JSON.stringify({ message: "Logout successfully" }),
+      {
+        status: 200,
+        headers: {
+          Location: "/",
+          "Set-Cookie": serialized,
+        },
+      }
+    );
   } else {
-    // Nếu không có cookie token, có thể trả về lỗi
-    const res = {
-      message: "No active session",
-    };
-    return new Response(JSON.stringify(res), {
+    return new Response(JSON.stringify({ message: "No cookie token" }), {
       status: 400, // Trạng thái lỗi 400 nếu không tìm thấy cookie
     });
   }
